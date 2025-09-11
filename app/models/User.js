@@ -1,0 +1,153 @@
+module.exports = (sequelize, DataTypes) => {
+    const User = sequelize.define('User', {
+        id: {
+            type: DataTypes.INTEGER(11),
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+        },
+        user_fname: {
+            type: DataTypes.STRING(255),
+            allowNull: false,
+        },
+        user_lname: {
+            type: DataTypes.STRING(255),
+            allowNull: false,
+        },
+        user_role: {
+            type: DataTypes.STRING(50),
+            allowNull: false,
+        },
+        email: {
+            type: DataTypes.STRING(255),
+            allowNull: false,
+            unique: true,
+        },
+        verification_token: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: null,
+        },
+        password: {
+            type: DataTypes.STRING(255),
+            allowNull: false,
+        },
+        user_gender: {
+            type: DataTypes.STRING(10),
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_mobile_number: {
+            type: DataTypes.STRING(15),
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_social_media: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_church_name: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_birthday: {
+            type: DataTypes.DATEONLY,
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_country: {
+            type: DataTypes.STRING(100),
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_city: {
+            type: DataTypes.STRING(100),
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_dgroup_leader: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: null,
+        },
+        approval_token: {
+            type: DataTypes.STRING(60),
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_ministry: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_already_a_dgroup_leader: {
+            type: DataTypes.TINYINT(1),
+            allowNull: true,
+            defaultValue: 0,
+        },
+        user_already_a_dgroup_member: {
+            type: DataTypes.TINYINT(1),
+            allowNull: true,
+            defaultValue: 0,
+        },
+        user_profile_picture: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_nickname: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_meeting_day: {
+            type: DataTypes.STRING(20),
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_meeting_time: {
+            type: DataTypes.TIME,
+            allowNull: true,
+            defaultValue: null,
+        },
+        user_profile_banner: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: null,
+        },
+        refreshToken: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        reset_password_token: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            defaultValue: null,
+        },
+        reset_password_expires: {
+            type: DataTypes.DATE,
+            allowNull: true,
+            defaultValue: null,
+        },
+    }, {
+        sequelize,
+        modelName: 'User',
+        tableName: 'users',
+        timestamps: false,
+        underscored: true,
+        indexes: [
+            {
+                name: 'email_index',
+                fields: ['email'],
+            },
+            {
+                name: 'approval_token_index',
+                fields: ['approval_token'],
+            },
+        ],
+    });
+
+    return User;
+};

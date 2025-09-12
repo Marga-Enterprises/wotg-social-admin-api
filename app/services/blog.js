@@ -21,31 +21,27 @@ const {
 
 // list of blogs with pagination and optional search
 exports.listBlogsService = async (query) => {
-    // Validate query parameters for pagination
     validateListBlogsParams(query);
 
     let { pageIndex, pageSize, search } = query;
 
     pageIndex = parseInt(pageIndex);
     pageSize = parseInt(pageSize);
-    const offset = pageIndex * pageSize;
+    const offset = (pageIndex - 1) * pageSize; // ✅ FIXED HERE
     const limit = pageSize;
 
-    // create new cache key
-    const cacheKey = `blogs_pageIndex:${pageIndex}_pageSize:${pageSize}_search:${search || ''}`;
+    const cacheKey = `blogs_page_${pageIndex}_size_${pageSize}_role_admin`;
     const cachedData = await redisClient.get(cacheKey);
     if (cachedData) {
         return JSON.parse(cachedData);
     }
 
-    // build the where clause
     const whereClause = search ? {
         blog_title: {
             [Op.iLike]: `%${search}%`
         }
     } : {};
 
-    // get paginated blogs from the database
     const { count, rows } = await Blog.findAndCountAll({
         where: whereClause,
         offset,
@@ -62,11 +58,11 @@ exports.listBlogsService = async (query) => {
         blogs: rows,
     };
 
-    // cache the result for future requests
-    await redisClient.setEx(cacheKey, 3600, JSON.stringify(result)); // Cache for 1 hour
+    await redisClient.setEx(cacheKey, 3600, JSON.stringify(result));
 
     return result;
 };
+
 
 // get a single blog by ID
 exports.getBlogByIdService = async (blogId) => {

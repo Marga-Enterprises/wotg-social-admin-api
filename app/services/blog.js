@@ -96,15 +96,21 @@ exports.getBlogByIdService = async (blogId) => {
     return blog;
 };
 
+
 // create a new blog
 exports.createBlogService = async (data, id) => {
     // Validate blog fields
     validateBlogFields(data);
 
-    // Create the blog
+    // Create a JS Date object representing today's date at 12:00 AM
+    const phMidnight = new Date();
+    phMidnight.setHours(0, 0, 0, 0); // Set to 12:00:00 AM of today (in server's local time)
+
+    // Create the blog without converting to UTC
     const newBlog = await Blog.create({
-        ...data, 
-        blog_creator: id
+        ...data,
+        blog_creator: id,
+        blog_release_date_and_time: phMidnight
     });
 
     // Clear relevant cache
@@ -112,6 +118,8 @@ exports.createBlogService = async (data, id) => {
 
     return newBlog;
 };
+
+
 
 // update an existing blog
 exports.updateBlogService = async (blogId, data) => {

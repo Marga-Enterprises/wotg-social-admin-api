@@ -31,7 +31,7 @@ jobs:
             echo "✅ Connecting to server..."
 
             # 👇 Navigate to your app’s folder on the server
-            cd /var/www/community.wotgonline.com/wotg-social-api-admin
+            cd /var/www/community.wotgonline.com/wotg-social-admin-api
 
             echo "🔁 Pulling latest code..."
             git reset --hard               # Discards any local changes

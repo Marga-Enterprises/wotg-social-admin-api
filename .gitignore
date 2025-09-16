@@ -1,5 +1,31 @@
-# Node dependencies
+# dependencies
 node_modules/
 
-# Environment files
+# local env files
 .env
+.env.production
+
+# OS / Editor garbage
+.DS_Store
+*.log
+*.swp
+*.tmp
+*.sublime-project
+*.sublime-workspace
+
+# Docker artifacts (if any)
+Dockerfile.lock
+
+# Local uploads or storage
+uploads/
+storage/
+
+# Coverage and test output
+coverage/
+*.lcov
+
+# VSCode settings
+.vscode/
+
+# Ignore local DB/Redis data (if ever mounted outside container)
+db_data/

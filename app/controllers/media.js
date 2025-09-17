@@ -3,7 +3,6 @@ const {
     getToken, 
     sendSuccess,
     sendError,
-    decodeToken,
     sendUnauthorizedError,
 } = require('@utils/methods');
 

@@ -65,7 +65,7 @@ exports.createBlog = async (req, res) => {
 
     try {
         // call the service to create the blog
-        const result = await createBlogService(req.body, decoded.id);
+        const result = await createBlogService(req.body, decoded.user.id);
 
         // if successful, send the result in the response
         return sendSuccess(res, result , 'Blog created successfully.');

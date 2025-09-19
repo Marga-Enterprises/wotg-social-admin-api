@@ -5,8 +5,8 @@ const spacesS3 = require('@config/aws'); // or relative path if not using aliase
 exports.getPresignedUrlService = async ({ fileName, fileType }) => {
   const params = {
     Bucket: 'wotg',
-    Key: `uploads/${fileName}`,
-    Expires: 60,
+    Key: `images/${fileName}`,
+    Expires: 300,
     ContentType: fileType,
     ACL: 'public-read',
   };
@@ -15,6 +15,6 @@ exports.getPresignedUrlService = async ({ fileName, fileType }) => {
 
   return {
     uploadUrl,
-    fileUrl: `https://${params.Bucket}.${process.env.DO_SPACES_ENDPOINT}/uploads/${fileName}`,
+    fileUrl: `https://${params.Bucket}.${process.env.DO_SPACES_ENDPOINT}/images/${fileName}`,
   };
 };

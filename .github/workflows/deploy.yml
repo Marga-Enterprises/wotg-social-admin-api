@@ -2,10 +2,10 @@
 name: Deploy to VPS
 
 # 👇 Trigger this workflow only when pushing to the 'master' branch
-# on:
-#  push:
-#    branches:
-#      - master  # ✅ Change to 'development' if testing from dev branch
+on:
+  push:
+    branches:
+      - master  # ✅ Change to 'development' if testing from dev branch
 
 jobs:
   deploy:

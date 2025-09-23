@@ -11,25 +11,9 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - PORT=${PORT}
-      - DB_HOST=db
+      - DB_HOST=${DB_HOST}        # 👈 set this in .env to main DB container name (e.g. wotg-social-api-db-1)
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - REDIS_URL=${REDIS_URL}   # 👈 read from .env instead of linking to local service
+      - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
-    depends_on:
-      - db
-
-  db:
-    image: mysql:8
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-    ports:
-      - "3309:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-
-volumes:
-  db_data:

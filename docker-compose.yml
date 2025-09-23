@@ -15,11 +15,10 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - REDIS_URL=redis://redis:6379
+      - REDIS_URL=${REDIS_URL}   # 👈 read from .env instead of linking to local service
       - JWT_SECRET=${JWT_SECRET}
     depends_on:
       - db
-      - redis
 
   db:
     image: mysql:8
@@ -27,16 +26,10 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
-    # 👉 Changed host port to 3309 to avoid conflict
     ports:
       - "3309:3306"
     volumes:
       - db_data:/var/lib/mysql
-
-  redis:
-    image: redis:7
-    ports:
-      - "6378:6379"  # 👉 changed host port (was 6377, now 6378) to avoid conflicts
 
 volumes:
   db_data:

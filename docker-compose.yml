@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   app:
+    container_name: wotg-social-admin-api
     build: .
     ports:
       - "5001:5001"
@@ -11,9 +12,16 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - PORT=${PORT}
-      - DB_HOST=${DB_HOST}        # 👈 set this in .env to main DB container name (e.g. wotg-social-api-db-1)
+      - DB_HOST=${DB_HOST}        # set in .env → wotg-social-api-db-1
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - REDIS_URL=${REDIS_URL}
+      - REDIS_URL=${REDIS_URL}    # set in .env → redis://wotg-social-api-redis-1:6379
       - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+    networks:
+      - wotg-network   # 👈 shared with main API/DB/Redis
+
+networks:
+  wotg-network:
+    external: true     # 👈 tells Docker to use the already existing network

@@ -12,17 +12,17 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - PORT=${PORT}
-      - DB_HOST=wotg-social-api-db-1          # 👈 main DB container name
-      - DB_PORT=3306
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - REDIS_URL=redis://wotg-social-api-redis-1:6379  # 👈 main Redis container name
+      - REDIS_URL=${REDIS_URL}
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
     networks:
-      - wotg-network   # 👈 same network as main stack
+      - wotg-network   # shared network
 
 networks:
   wotg-network:
-    external: true     # 👈 use the network you already created
+    external: true

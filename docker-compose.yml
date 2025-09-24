@@ -21,7 +21,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
     networks:
-      - wotg-network   # shared network
+      - wotg-network
 
 networks:
   wotg-network:

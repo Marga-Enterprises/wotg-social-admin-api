@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     container_name: wotg-social-admin-api
@@ -12,7 +10,7 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - PORT=${PORT}
-      - DB_HOST=db              # 👈 use the "db" service from main
+      - DB_HOST=db
       - DB_PORT=3306
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
@@ -21,8 +19,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
     networks:
-      - wotg-network
+      - wotg-network   # 👈 force it to use the shared network
 
 networks:
   wotg-network:
-    external: true
+    external: true    # 👈 this tells Docker to use the existing network

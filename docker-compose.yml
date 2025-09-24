@@ -12,13 +12,17 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
       - PORT=${PORT}
-      - DB_HOST=host.docker.internal   # ✅ resolves to VPS host
-      - DB_PORT=3308                   # ✅ match your main DB port
+      - DB_HOST=wotg-social-api-db-1          # 👈 main DB container name
+      - DB_PORT=3306
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_NAME=${DB_NAME}
-      - REDIS_URL=redis://host.docker.internal:6377  # ✅ match your Redis port
+      - REDIS_URL=redis://wotg-social-api-redis-1:6379  # 👈 main Redis container name
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRATION=${JWT_EXPIRATION}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"  # 👈 this makes it work on Linux VPS
+    networks:
+      - wotg-network   # 👈 same network as main stack
+
+networks:
+  wotg-network:
+    external: true     # 👈 use the network you already created

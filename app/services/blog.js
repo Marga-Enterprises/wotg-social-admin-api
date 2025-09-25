@@ -70,7 +70,7 @@ exports.getBlogByIdService = async (blogId) => {
     validateBlogId(blogId);
 
     // create new cache key
-    const cacheKey = `blog_id:${blogId}`;
+    const cacheKey = `blog_${blogId}`;
     const cachedData = await redisClient.get(cacheKey);
 
     if (cachedData) {

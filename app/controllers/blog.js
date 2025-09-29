@@ -65,12 +65,11 @@ exports.createBlog = async (req, res) => {
 
     try {
         // call the service to create the blog
-        const result = await createBlogService(req.body, decoded.user.id);
+        const result = await createBlogService(req.body, decoded.id);
 
         // if successful, send the result in the response
         return sendSuccess(res, result , 'Blog created successfully.');
     } catch (error) {
-        console.log('[[[[[[[[[[[ERRORRRRR]]]]]]]]]]]', error);
         return sendError(res, '', error.message, error.status);
     }
 };

@@ -106,7 +106,8 @@ exports.createBlogService = async (data, id) => {
     const newBlog = await Blog.create({
         ...data,
         blog_creator: id,
-        blog_release_date_and_time: phMidnight
+        blog_release_date_and_time: phMidnight,
+        blog_approved: true, // default to false
     });
 
     // Clear relevant cache

@@ -27,11 +27,15 @@ app.use(cors());
 const authRoutes = require("@routes/auth");
 const blogRoutes = require("@routes/blogs");
 const mediaRoutes = require("@routes/media");
+const albumRoutes = require("@routes/album");
+const musicRoutes = require("@routes/music");
 
 // Use routes
 app.use("/auth", authRoutes);
 app.use("/blog", blogRoutes);
 app.use("/media", mediaRoutes);
+app.use("/album", albumRoutes);
+app.use("/music", musicRoutes);
 
 // Sync Database and Start Server
 sequelize

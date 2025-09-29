@@ -70,6 +70,7 @@ exports.createBlog = async (req, res) => {
         // if successful, send the result in the response
         return sendSuccess(res, result , 'Blog created successfully.');
     } catch (error) {
+        console.log('[[[[[[[[[[[ERRORRRRR]]]]]]]]]]]', error);
         return sendError(res, '', error.message, error.status);
     }
 };

@@ -1,5 +1,5 @@
 // model imports 
-const { Album } = require('@models');
+const { Album, Music } = require('@models');
 
 // validators
 const {
@@ -14,6 +14,7 @@ const redisClient = require('@config/redis');
 // utility redis client
 const {
     clearAlbumCache,
+    clearMusicCache
 } = require('@utils/clearRedisCache');
 
 // services functions
@@ -140,10 +141,14 @@ exports.deleteAlbumService = async (albumId) => {
         throw new Error('Album not found');
     }
 
+    // also delete all associated music entries
+    await Music.destroy({ where: { album_id: albumId } });
+
     await album.destroy();
 
     // clear album cache
     await clearAlbumCache(albumId);
+    await clearMusicCache();
 
     return true;
 };

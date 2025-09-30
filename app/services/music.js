@@ -64,7 +64,7 @@ exports.listMusicService = async (query) => {
         totalItems: count,
         totalPages,
         currentPage: pageIndex,
-        music: rows,
+        musics: rows,
     };
 
     await redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour

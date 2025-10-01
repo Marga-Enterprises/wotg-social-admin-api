@@ -101,3 +101,70 @@ exports.clearMusicCache = async (musicId) => {
   }
 };
 
+
+// clear post cache
+// Clear posts cache
+exports.clearPostsCache = async (postId) => {
+  try {
+    console.log("🧹 Clearing posts cache...");
+
+    // Define the key patterns for posts
+    const paginatedPattern = "posts:page:*";
+    const filteredPattern = "posts:page*:user*";
+
+    // If a postId is provided, fetch specific keys for that post entry
+    const postKeys = postId ? await redisClient.keys(`post_${postId}`) : [];
+
+    // Fetch all keys matching the patterns
+    const allPaginatedKeys = await redisClient.keys(paginatedPattern);
+    const allFilteredKeys = await redisClient.keys(filteredPattern);
+
+    // Combine all keys into a unique set
+    const allKeys = [...new Set([...allPaginatedKeys, ...allFilteredKeys, ...postKeys])];
+
+    // If there are any keys to delete, proceed with deletion
+    if (allKeys.length > 0) {
+      await redisClient.del(allKeys);
+      console.log(`🗑️ Cleared ${allKeys.length} posts cache entries.`);
+    } else {
+      console.log("ℹ️ No matching post cache keys found.");
+    }
+
+    console.log("✅ Posts cache cleared.");
+  } catch (error) {
+    console.error("❌ Error clearing posts cache:", error);
+  }
+};
+// Clear posts cache
+exports.clearPostsCache = async (postId) => {
+  try {
+    console.log("🧹 Clearing posts cache...");
+
+    // Define the key patterns for posts
+    const paginatedPattern = "posts:page:*";
+    const filteredPattern = "posts:page*:user*";
+
+    // If a postId is provided, fetch specific keys for that post entry
+    const postKeys = postId ? await redisClient.keys(`post_${postId}`) : [];
+
+    // Fetch all keys matching the patterns
+    const allPaginatedKeys = await redisClient.keys(paginatedPattern);
+    const allFilteredKeys = await redisClient.keys(filteredPattern);
+
+    // Combine all keys into a unique set
+    const allKeys = [...new Set([...allPaginatedKeys, ...allFilteredKeys, ...postKeys])];
+
+    // If there are any keys to delete, proceed with deletion
+    if (allKeys.length > 0) {
+      await redisClient.del(allKeys);
+      console.log(`🗑️ Cleared ${allKeys.length} posts cache entries.`);
+    } else {
+      console.log("ℹ️ No matching post cache keys found.");
+    }
+
+    console.log("✅ Posts cache cleared.");
+  } catch (error) {
+    console.error("❌ Error clearing posts cache:", error);
+  }
+};
+

@@ -1,5 +1,5 @@
 // model imports
-const { Post, User } = require('@models');
+const { Post, User, PostMedia } = require('@models');
 
 // validators
 const {
@@ -30,7 +30,7 @@ exports.listPostsService = async (query) => {
     const offset = (pageIndex - 1) * pageSize;
     const limit = pageSize;
 
-    const cacheKey = `posts:page:${pageIndex}:size:${pageSize}`;
+    const cacheKey = `posts:page:${pageIndex}:size:${pageSize}:user:244`;
     const cachedData = await redisClient.get(cacheKey);
 
     if (cachedData) {
@@ -38,7 +38,7 @@ exports.listPostsService = async (query) => {
     };
 
     const whereClause = {
-        userId: 244
+        user_id: 244
     };
 
     const { count, rows } = await Post.findAndCountAll({
@@ -46,11 +46,18 @@ exports.listPostsService = async (query) => {
         where: whereClause,
         limit,
         order: [['created_at', 'DESC']],
-        include: [{
-            model: User,
-            as: 'author',
-            attributes: ['id', 'username', 'avatar_url'],
-        }],
+        include: [
+            {
+                model: User,
+                as: 'author',
+                attributes: ['id', 'user_profile_picture', 'user_fname', 'user_lname'],
+            },
+            {
+                model: PostMedia,
+                as: 'media',
+                attributes: ['id', 'type', 'url', 'thumbnail'],
+            }
+        ],
     });
 
 
@@ -71,12 +78,28 @@ exports.listPostsService = async (query) => {
 exports.createPostService = async (data, userId) => {
     validatePostFields(data);
 
-    const { content } = data;
+    const { content, mediaUrls, mediaType } = data;
 
     const newPost = await Post.create({
         userId,
         content,
     });
+
+    // If mediaUrls is provided (either a string or array)
+    if (mediaUrls) {
+        const urls = Array.isArray(mediaUrls) ? mediaUrls : [mediaUrls];
+
+        // Use Promise.all to create all medias in parallel
+        await Promise.all(
+            urls.map(url =>
+                PostMedia.create({
+                    url,
+                    type: mediaType || 'image',
+                    postId: newPost.id,
+                })
+            )
+        );
+    }
 
     await clearPostsCache();
 
@@ -96,11 +119,18 @@ exports.getPostByIdService = async (postId) => {
     }
 
     const post = await Post.findByPk(postId, {
-        include: [{
-            model: User,
-            as: 'author',
-            attributes: ['id', 'username', 'avatar_url'],
-        }],
+        include: [
+            {
+                model: User,
+                as: 'author',
+                attributes: ['id', 'username', 'avatar_url'],
+            },
+            {
+                model: PostMedia,
+                as: 'media',
+                attributes: ['id', 'type', 'url', 'thumbnail'],
+            }
+        ],
     });
 
     if (!post) {
@@ -112,12 +142,17 @@ exports.getPostByIdService = async (postId) => {
     return post;
 };
 
+
 // update a post
 exports.updatePostService = async (postId, data, userId) => {
     validatePostId(postId);
     validatePostFields(data);
 
-    const post = await Post.findByPk(postId);
+    const { content, mediaUrls, mediaType } = data;
+
+    const post = await Post.findByPk(postId, {
+        include: [PostMedia],
+    });
 
     if (!post) {
         throw new Error('Post not found');
@@ -127,14 +162,35 @@ exports.updatePostService = async (postId, data, userId) => {
         throw new Error('Unauthorized: You can only update your own posts.');
     }
 
+    // Update post content
     await post.update({
-        content: data.content,
+        content,
     });
+
+    // Handle media updates if provided
+    if (mediaUrls) {
+        const urls = Array.isArray(mediaUrls) ? mediaUrls : [mediaUrls];
+
+        // First clear old media (if any)
+        await PostMedia.destroy({ where: { postId } });
+
+        // Then insert the new set of media
+        await Promise.all(
+            urls.map(url =>
+                PostMedia.create({
+                    url,
+                    type: mediaType || 'image',
+                    postId,
+                })
+            )
+        );
+    }
 
     await clearPostsCache(postId);
 
     return post;
 };
+
 
 // delete a post
 exports.deletePostService = async (postId, userId) => {

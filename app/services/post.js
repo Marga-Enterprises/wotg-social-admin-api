@@ -78,7 +78,7 @@ exports.listPostsService = async (query) => {
 exports.createPostService = async (data, userId) => {
     validatePostFields(data);
 
-    const { content, mediaUrls, mediaType } = data;
+    const { content, mediaUrl, mediaType } = data;
 
     const newPost = await Post.create({
         userId,
@@ -86,19 +86,12 @@ exports.createPostService = async (data, userId) => {
     });
 
     // If mediaUrls is provided (either a string or array)
-    if (mediaUrls) {
-        const urls = Array.isArray(mediaUrls) ? mediaUrls : [mediaUrls];
-
-        // Use Promise.all to create all medias in parallel
-        await Promise.all(
-            urls.map(url =>
-                PostMedia.create({
-                    url,
-                    type: mediaType || 'image',
-                    postId: newPost.id,
-                })
-            )
-        );
+    if (mediaUrl) {
+        await PostMedia.create({
+            url: mediaUrl,
+            type: mediaType || 'image',
+            postId: newPost.id,
+        });
     }
 
     await clearPostsCache();
@@ -148,7 +141,7 @@ exports.updatePostService = async (postId, data, userId) => {
     validatePostId(postId);
     validatePostFields(data);
 
-    const { content, mediaUrls, mediaType } = data;
+    const { content, mediaUrl, mediaType } = data;
 
     const post = await Post.findByPk(postId, {
         include: [PostMedia],
@@ -168,23 +161,18 @@ exports.updatePostService = async (postId, data, userId) => {
     });
 
     // Handle media updates if provided
-    if (mediaUrls) {
-        const urls = Array.isArray(mediaUrls) ? mediaUrls : [mediaUrls];
-
-        // First clear old media (if any)
+    if (mediaUrl) {
+        // Clear old media
         await PostMedia.destroy({ where: { postId } });
 
-        // Then insert the new set of media
-        await Promise.all(
-            urls.map(url =>
-                PostMedia.create({
-                    url,
-                    type: mediaType || 'image',
-                    postId,
-                })
-            )
-        );
+        // Insert new media
+        await PostMedia.create({
+            url: mediaUrl,
+            type: mediaType || 'image',
+            postId,
+        });
     }
+
 
     await clearPostsCache(postId);
 

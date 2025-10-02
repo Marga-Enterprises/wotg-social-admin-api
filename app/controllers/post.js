@@ -53,7 +53,9 @@ exports.createPost = async (req, res) => {
 
     try {
         const decoded = decodeToken(token);
-        const userId = decoded.id;
+        const userId = decoded.user.id;
+
+        console.log('[[[[[[[[[[[[Creating post for userId:]]]]]]]]]]]]', decoded); // Debug log
 
         const result = await createPostService(req.body, userId);
         return sendSuccess(res, result , 'Post created successfully.');

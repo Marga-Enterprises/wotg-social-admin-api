@@ -78,11 +78,12 @@ exports.listPostsService = async (query) => {
 exports.createPostService = async (data, userId) => {
     validatePostFields(data);
 
-    const { content, mediaUrl, mediaType } = data;
+    const { content, mediaUrl, release_date, mediaType } = data;
 
     const newPost = await Post.create({
         user_id: userId,
         content,
+        release_date,
     });
 
     // If mediaUrls is provided (either a string or array)
@@ -190,7 +191,7 @@ exports.deletePostService = async (postId, userId) => {
         throw new Error('Post not found');
     }
 
-    if (post.userId !== userId) {
+    if (post.user_id !== userId) {
         throw new Error('Unauthorized: You can only delete your own posts.');
     }
 

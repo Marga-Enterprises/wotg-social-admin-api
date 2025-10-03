@@ -85,8 +85,6 @@ exports.createPostService = async (data, userId) => {
         content,
     });
 
-    console.log('[[[[[[[[[[[[New Post Created:]]]]]]]]]]]]', newPost); // Debug log
-
     // If mediaUrls is provided (either a string or array)
     if (mediaUrl) {
         await PostMedia.create({

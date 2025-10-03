@@ -117,7 +117,7 @@ exports.getPostByIdService = async (postId) => {
             {
                 model: User,
                 as: 'author',
-                attributes: ['id', 'username', 'avatar_url'],
+                attributes: ['id', 'user_profile_picture', 'user_fname', 'user_lname'],
             },
             {
                 model: PostMedia,
@@ -144,9 +144,7 @@ exports.updatePostService = async (postId, data, userId) => {
 
     const { content, mediaUrl, mediaType, release_date } = data;
 
-    const post = await Post.findByPk(postId, {
-        include: [PostMedia],
-    });
+    const post = await Post.findByPk(postId);
 
     if (!post) {
         throw new Error('Post not found');
@@ -165,13 +163,13 @@ exports.updatePostService = async (postId, data, userId) => {
     // Handle media updates if provided
     if (mediaUrl) {
         // Clear old media
-        await PostMedia.destroy({ where: { postId } });
+        await PostMedia.destroy({ where: { post_id: postId } });
 
         // Insert new media
         await PostMedia.create({
             url: mediaUrl,
             type: mediaType || 'image',
-            postId,
+            post_id: postId,
         });
     }
 

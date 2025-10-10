@@ -107,7 +107,7 @@ exports.createBlogService = async (data, id) => {
         ...data,
         blog_creator: id,
         blog_release_date_and_time: phMidnight,
-        blog_approved: true, // default to false
+        blog_approved: false,
     });
 
     // Clear relevant cache
@@ -119,7 +119,7 @@ exports.createBlogService = async (data, id) => {
 
 
 // update an existing blog
-exports.updateBlogService = async (blogId, data) => {
+exports.updateBlogService = async (blogId, data, userRole) => {
     // Validate the blog ID
     validateBlogId(blogId);
 
@@ -135,8 +135,14 @@ exports.updateBlogService = async (blogId, data) => {
         throw error;
     }
 
-    // Update the blog
-    await blog.update(data);
+    if (userRole === 'owner') {
+        await blog.update({
+            blog_approved: true,
+            ...data,
+        });
+    } else {
+        await blog.update(data);
+    }
 
     // Clear relevant cache
     await clearBlogCache(blogId);

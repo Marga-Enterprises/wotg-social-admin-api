@@ -80,11 +80,15 @@ exports.updateBlog = async (req, res) => {
     // check if the user is logged in
     const token = getToken(req.headers);
     if (!token) return sendUnauthorizedError(res, 'You must be logged in to access this resource.');
+
+    // decode the token to get user info
+    const decoded = decodeToken(token);
+
     try {
         const { blogId } = req.params;
 
         // call the service to update the blog
-        const result = await updateBlogService(blogId, req.body);
+        const result = await updateBlogService(blogId, req.body, decoded.user_role);
 
         // if successful, send the result in the response
         return sendSuccess(res, result , 'Blog updated successfully.');

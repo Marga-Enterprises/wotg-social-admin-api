@@ -16,6 +16,8 @@ const {
     clearBlogCache,
 } = require('@utils/clearRedisCache');
 
+// utility for sending notifications
+const { sendNotification } = require('@utils/sendNotification');
 
 // services functions
 
@@ -119,35 +121,78 @@ exports.createBlogService = async (data, id) => {
 
 
 // update an existing blog
+// -------------------------------------------------------------
+// 📰 Update an existing blog & notify subscribers (owner only)
+// -------------------------------------------------------------
 exports.updateBlogService = async (blogId, data, userRole) => {
-    // Validate the blog ID
-    validateBlogId(blogId);
+  // 🧩 Validate blog ID and input fields
+  validateBlogId(blogId);
+  validateBlogFields(data, true); // true = update mode
 
-    // Validate blog fields
-    validateBlogFields(data, true); // true indicates it's an update
+  // 🔍 Find the existing blog record
+  const blog = await Blog.findByPk(blogId);
+  if (!blog) {
+    const error = new Error("Blog not found.");
+    error.status = 404;
+    throw error;
+  }
 
-    // Find the blog by ID
-    const blog = await Blog.findByPk(blogId);
+  // -------------------------------------------------------------
+  // 👑 If user is owner → approve + update + possibly notify
+  // -------------------------------------------------------------
+  if (userRole === "owner") {
+    await blog.update({
+      blog_approved: true,
+      ...data,
+    });
 
-    if (!blog) {
-        const error = new Error('Blog not found.');
-        error.status = 404;
-        throw error;
-    }
-
-    if (userRole === 'owner') {
-        await blog.update({
-            blog_approved: true,
-            ...data,
-        });
-    } else {
-        await blog.update(data);
-    }
-
-    // Clear relevant cache
+    // ♻️ Clear cache for this blog
     await clearBlogCache(blogId);
 
+    // -------------------------------------------------------------
+    // 🔔 Send notification only if blog is released (by owner)
+    // -------------------------------------------------------------
+    try {
+      const now = new Date();
+      const releaseDate = data.blog_release_date_and_time
+        ? new Date(data.blog_release_date_and_time)
+        : now;
+
+      if (releaseDate <= now) {
+        const blogUrl = `https://community.wotgonline.com/blogs/${blogId}`;
+
+        await sendNotification(
+          "📰 New Blog Released!",
+          blog.blog_title?.substring(0, 80) ||
+            "A new blog is now available on WOTG Community!",
+          {
+            url: blogUrl,
+            type: "blog",
+            blogId: String(blogId),
+          }
+        );
+
+        console.log(`✅ Notification sent for blog ID ${blogId}`);
+      } else {
+        console.log(
+          `🕓 Skipped notification for scheduled blog ID ${blogId} (release_date: ${releaseDate.toISOString()})`
+        );
+      }
+    } catch (error) {
+      console.error("⚠️ Failed to send blog release notification:", error.message);
+    }
+
     return blog;
+  }
+
+  // -------------------------------------------------------------
+  // 👤 For non-owner users → just update (no notification)
+  // -------------------------------------------------------------
+  await blog.update(data);
+  await clearBlogCache(blogId);
+  console.log(`✏️ Blog ID ${blogId} updated by non-owner (no notification sent)`);
+
+  return blog;
 };
 
 

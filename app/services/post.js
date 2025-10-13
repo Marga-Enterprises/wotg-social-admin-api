@@ -16,6 +16,9 @@ const {
     clearPostsCache
 } = require('@utils/clearRedisCache');
 
+// utility for sending notifications
+const { sendNotification } = require('@utils/sendNotification');
+
 
 // services functions
 
@@ -75,29 +78,65 @@ exports.listPostsService = async (query) => {
 
 
 // create a new post
+// create a new post
 exports.createPostService = async (data, userId) => {
-    validatePostFields(data);
+  // 🧩 Validate input fields
+  validatePostFields(data);
 
-    const { content, mediaUrl, release_date, mediaType } = data;
+  const { content, mediaUrl, release_date, mediaType } = data;
 
-    const newPost = await Post.create({
-        user_id: userId,
-        content,
-        release_date,
+  // 📝 Create the new post in the database
+  const newPost = await Post.create({
+    user_id: userId,
+    content,
+    release_date,
+  });
+
+  // 🎨 Save attached media (if any)
+  if (mediaUrl) {
+    await PostMedia.create({
+      url: mediaUrl,
+      type: mediaType || "image",
+      post_id: newPost.id,
     });
+  }
 
-    // If mediaUrls is provided (either a string or array)
-    if (mediaUrl) {
-        await PostMedia.create({
-            url: mediaUrl,
-            type: mediaType || 'image',
-            post_id: newPost.id,
-        });
+  // ♻️ Clear cache after new content
+  await clearPostsCache();
+
+  // -------------------------------------------------------------
+  // 🔔 Send push notification only if release_date <= current date
+  // -------------------------------------------------------------
+  try {
+    const now = new Date();
+    const scheduledDate = release_date ? new Date(release_date) : now;
+
+    // 🧠 Only send notification if release_date is now or in the past
+    if (scheduledDate <= now) {
+      const postUrl = `https://community.wotgonline.com/feeds?post=${newPost.id}`;
+
+      await sendNotification(
+        "📰 New Post Published!",
+        content?.substring(0, 80) || "Check out the latest post on WOTG Community!",
+        {
+          url: postUrl,
+          type: "post",
+          postId: String(newPost.id),
+        }
+      );
+
+      console.log(`✅ Notification sent for post ID ${newPost.id}`);
+    } else {
+      console.log(
+        `🕓 Skipped notification for scheduled post ID ${newPost.id} (release_date: ${scheduledDate.toISOString()})`
+      );
     }
+  } catch (error) {
+    console.error("⚠️ Failed to send push notification:", error.message);
+  }
 
-    await clearPostsCache();
-
-    return newPost;
+  // ✅ Return the created post
+  return newPost;
 };
 
 

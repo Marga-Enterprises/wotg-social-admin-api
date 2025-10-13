@@ -4,6 +4,7 @@ node_modules/
 # local env files
 .env
 .env.production
+firebase-credentials.json
 
 # OS / Editor garbage
 .DS_Store

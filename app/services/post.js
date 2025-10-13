@@ -116,7 +116,7 @@ exports.createPostService = async (data, userId) => {
       const postUrl = `https://community.wotgonline.com/feeds?post=${newPost.id}`;
 
       await sendNotification(
-        "📰 New Post Published!",
+        "New Post Published! From WOTG Community",
         content?.substring(0, 80) || "Check out the latest post on WOTG Community!",
         {
           url: postUrl,

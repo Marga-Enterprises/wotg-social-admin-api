@@ -162,7 +162,7 @@ exports.updateBlogService = async (blogId, data, userRole) => {
         const blogUrl = `https://community.wotgonline.com/blogs/${blogId}`;
 
         await sendNotification(
-          "📰 New Blog Released!",
+          "New Devotion Released!",
           blog.blog_title?.substring(0, 80) ||
             "A new blog is now available on WOTG Community!",
           {

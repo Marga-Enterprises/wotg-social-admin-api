@@ -39,6 +39,9 @@ app.use("/album", albumRoutes);
 app.use("/music", musicRoutes);
 app.use("/post", postRoutes);
 
+// Schedulers
+require("@schedulers/scheduledJobs");
+
 // Sync Database and Start Server
 sequelize
   .sync({ force: false })

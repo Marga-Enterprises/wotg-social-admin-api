@@ -30,6 +30,7 @@ const mediaRoutes = require("@routes/media");
 const albumRoutes = require("@routes/album");
 const musicRoutes = require("@routes/music");
 const postRoutes = require("@routes/post");
+const userRoutes = require("@routes/user");
 
 // Use routes
 app.use("/auth", authRoutes);
@@ -38,6 +39,7 @@ app.use("/media", mediaRoutes);
 app.use("/album", albumRoutes);
 app.use("/music", musicRoutes);
 app.use("/post", postRoutes);
+app.use("/user", userRoutes);
 
 // Schedulers
 require("@schedulers/scheduledJobs");

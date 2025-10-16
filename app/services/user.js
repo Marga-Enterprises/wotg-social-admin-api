@@ -34,54 +34,61 @@ exports.listUsersService = async (query) => {
   const offset = (pageIndex - 1) * pageSize;
   const limit = pageSize;
 
-  // 🧠 Cache key: includes all filters
-  const cacheKey = `users:page:${pageIndex}:size:${pageSize}:search:${search || ""}:guest:${guestFilter || "both"}:from:${dateFrom || ""}:to:${dateTo || ""}`;
-  const cachedData = await redisClient.get(cacheKey);
-  if (cachedData) {
-    return JSON.parse(cachedData);
-  }
-
   // 🧩 WHERE conditions builder
   const whereClause = {};
 
   // 🔍 Search: by fname, lname, or email
   if (search) {
     whereClause[Op.or] = [
-      { user_fname: { [Op.iLike]: `%${search}%` } },
-      { user_lname: { [Op.iLike]: `%${search}%` } },
-      { email: { [Op.iLike]: `%${search}%` } },
+      { user_fname: { [Op.like]: `%${search}%` } },
+      { user_lname: { [Op.like]: `%${search}%` } },
+      { email: { [Op.like]: `%${search}%` } },
     ];
   }
 
-  // 🧑‍💻 Guest filter
-  if (guestFilter === "guest") {
+  // 👤 Guest filter
+  if (guestFilter === 'guest') {
     whereClause.guest_account = true;
-  } else if (guestFilter === "nonguest") {
+  } else if (guestFilter === 'nonguest' || guestFilter === 'non_guest') {
     whereClause.guest_account = false;
   }
-  // default = both → no guest filter applied
+  // both → skip filter
 
-  // 📅 Date filter
-  if (dateFrom && dateTo) {
-    whereClause.registered_at = {
-      [Op.between]: [new Date(dateFrom), new Date(dateTo)],
-    };
-  } else if (dateFrom) {
-    whereClause.registered_at = {
-      [Op.gte]: new Date(dateFrom),
-    };
-  } else if (dateTo) {
-    whereClause.registered_at = {
-      [Op.lte]: new Date(dateTo),
-    };
+  // 🕐 Normalize date range
+  const normalizeDate = (date, endOfDay = false) => {
+    if (!date) return null;
+    const d = new Date(date);
+    if (isNaN(d)) return null;
+    if (endOfDay) d.setHours(23, 59, 59, 999);
+    else d.setHours(0, 0, 0, 0);
+    return d;
+  };
+
+  const from = normalizeDate(dateFrom);
+  const to = normalizeDate(dateTo, true);
+
+  if (from && to) {
+    whereClause.registered_at = { [Op.between]: [from, to] };
+  } else if (from) {
+    whereClause.registered_at = { [Op.gte]: from };
+  } else if (to) {
+    whereClause.registered_at = { [Op.lte]: to };
   }
+
+  // 🧠 Cache key with normalized dates
+  const cacheKey = `users:page:${pageIndex}:size:${pageSize}:search:${search || ''}:guest:${
+    guestFilter || 'both'
+  }:from:${from ? from.toISOString().split('T')[0] : ''}:to:${to ? to.toISOString().split('T')[0] : ''}`;
+
+  const cached = await redisClient.get(cacheKey);
+  if (cached) return JSON.parse(cached);
 
   // 🧭 Fetch with pagination
   const { count, rows } = await User.findAndCountAll({
     where: whereClause,
     offset,
     limit,
-    order: [["registered_at", "DESC"]],
+    order: [['registered_at', 'DESC']],
   });
 
   const totalPages = Math.ceil(count / pageSize);
@@ -91,16 +98,9 @@ exports.listUsersService = async (query) => {
     totalPages,
     currentPage: pageIndex,
     users: rows,
-    filters: {
-      search: search || null,
-      guestFilter: guestFilter || "both",
-      dateFrom: dateFrom || null,
-      dateTo: dateTo || null,
-    },
   };
 
-  // 🧊 Cache for 1 hour
-  await redisClient.set(cacheKey, JSON.stringify(result), "EX", 3600);
+  await redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
 
   return result;
 };

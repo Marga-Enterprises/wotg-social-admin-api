@@ -17,7 +17,7 @@ exports.loginService = async (data) => {
     validateLoginFields(data);
 
     // Find the user by email and if its admin or owner
-    const user = await User.findOne({ where: { email, user_role: ['admin', 'owner'] } });
+    const user = await User.findOne({ where: { email, user_role: ['admin', 'owner', 'missionary'] } });
     if (!user) {
         const error = new Error('Invalid email or password.');
         error.status = 401;

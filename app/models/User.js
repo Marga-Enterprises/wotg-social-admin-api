@@ -133,21 +133,20 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
         defaultValue: null,
       },
-
-      // 🕓 New field: registered date/time
       registeredAt: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW,
-        comment: "Date and time the user registered",
       },
-
-      // 🧑‍ Guest account flag
       guest_account: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,
-        comment: "True if account was created as guest",
+      },
+      guest_status: {
+          type: DataTypes.STRING(50),
+          allowNull: true,
+          defaultValue: null,
       },
     },
     {

@@ -16,60 +16,89 @@ const {
     clearMusicCache,
 } = require('@utils/clearRedisCache');
 
+// sequelize operator
+const { Op } = require('sequelize');
+
+
 // services functions
 
 // list of music with pagination and optional search
 exports.listMusicService = async (query) => {
-    validateListMusicParams(query);
+  // ✅ Step 1: Validate and normalize params
+  validateListMusicParams(query);
 
-    let { pageIndex, pageSize, albumId, search } = query;
+  let {
+    pageIndex = 1,
+    pageSize = 10,
+    albumId,
+    search,
+    orderBy = 'created_at',
+    orderDirection = 'DESC',
+  } = query;
 
-    pageIndex = parseInt(pageIndex);
-    pageSize = parseInt(pageSize);
-    const offset = (pageIndex - 1) * pageSize;
-    const limit = pageSize;
+  pageIndex = Math.max(1, parseInt(pageIndex, 10) || 1);
+  pageSize = Math.min(Math.max(parseInt(pageSize, 10) || 10, 1), 100);
+  const offset = (pageIndex - 1) * pageSize;
 
-    const cacheKey = `music:page:${pageIndex}:size:${pageSize}:album:${albumId || 'all'}:search:${search || 'none'}:order:createdAt`;
-    const cachedData = await redisClient.get(cacheKey);
+  // ✅ Step 2: Safe values and cache key (your format)
+  const safeAlbumId = albumId || '';
+  const safeSearch = search?.trim() || '';
+  const safeOrderBy = ['created_at', 'title', 'play_count'].includes(orderBy)
+    ? orderBy
+    : 'created_at';
+  const safeDirection = ['ASC', 'DESC'].includes(orderDirection.toUpperCase())
+    ? orderDirection.toUpperCase()
+    : 'DESC';
 
-    if (cachedData) {
-        return JSON.parse(cachedData);
-    }
+  // ✅ Build cache key in your requested format
+  const cacheKey = `music:page:${pageIndex}:${pageSize}${safeAlbumId ? `:album:${safeAlbumId}` : ""}${safeSearch ? `:search:${safeSearch}` : ""}${safeOrderBy ? `:order:${safeOrderBy}` : ""}${safeDirection ? `:dir:${safeDirection}` : ""}`;
 
-    const whereClause = {};
-    if (albumId) {
-        whereClause.album_id = albumId;
-    }
+  // ✅ Step 3: Try cache first
+  const cached = await redisClient.get(cacheKey);
+  if (cached) {
+    return JSON.parse(cached);
+  }
 
-    if (search) {
-        whereClause.title = {
-            [Op.iLike]: `%${search}%`
-        };
-    }
+  // ✅ Step 4: Build dynamic filters
+  const whereClause = {};
+  if (albumId) whereClause.album_id = albumId;
 
-    const { count, rows } = await Music.findAndCountAll({
-        where: whereClause,
-        offset,
-        limit,
-        order: [['created_at', 'DESC']],
-        include: [{
-            model: Album,
-            attributes: ['id', 'title', 'artist_name', 'cover_image'],
-        }],
-    });
+  if (search) {
+    // Case-insensitive LIKE for MySQL / MariaDB
+    whereClause.title = { [Op.like]: `%${search}%` };
+  }
 
-    const totalPages = Math.ceil(count / pageSize);
+  // ✅ Step 5: Fetch data
+  const { count, rows } = await Music.findAndCountAll({
+    where: whereClause,
+    offset,
+    limit: pageSize,
+    order: [[safeOrderBy, safeDirection]],
+    include: [
+      {
+        model: Album,
+        attributes: ['id', 'title', 'artist_name', 'cover_image'],
+      },
+    ],
+    distinct: true, // ensures accurate count when using JOIN
+  });
 
-    const result = {
-        totalItems: count,
-        totalPages,
-        currentPage: pageIndex,
-        musics: rows,
-    };
+  const totalPages = Math.max(1, Math.ceil(count / pageSize));
 
-    await redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+  // ✅ Step 6: Prepare result
+  const result = {
+    totalItems: count,
+    totalPages,
+    currentPage: pageIndex,
+    hasNextPage: pageIndex < totalPages,
+    hasPrevPage: pageIndex > 1,
+    musics: rows,
+  };
 
-    return result;
+  // ✅ Step 7: Cache result (1 hour)
+  await redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
+
+  return result;
 };
 
 

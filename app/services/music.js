@@ -51,7 +51,7 @@ exports.listMusicService = async (query) => {
     : 'DESC';
 
   // ✅ Build cache key in your requested format
-  const cacheKey = `music:page:${pageIndex}:${pageSize}${safeAlbumId ? `:album:${safeAlbumId}` : ""}${safeSearch ? `:search:${safeSearch}` : ""}${safeOrderBy ? `:order:${safeOrderBy}` : ""}${safeDirection ? `:dir:${safeDirection}` : ""}`;
+  const cacheKey = `music:page:${pageIndex}:${pageSize}${safeAlbumId ? `:album:${safeAlbumId}` : ""}${safeSearch ? `:search:${safeSearch}` : ""}${safeOrderBy ? `:order:${safeOrderBy}` : ""}`;
 
   // ✅ Step 3: Try cache first
   const cached = await redisClient.get(cacheKey);

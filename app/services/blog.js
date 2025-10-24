@@ -19,50 +19,62 @@ const {
 // utility for sending notifications
 const { sendNotification } = require('@utils/sendNotification');
 
+// sequelize operator
+const { Op } = require('sequelize');
+
 // services functions
 
 // list of blogs with pagination and optional search
 exports.listBlogsService = async (query) => {
-    validateListBlogsParams(query);
+  validateListBlogsParams(query);
 
-    let { pageIndex, pageSize, search } = query;
+  let { pageIndex, pageSize, search } = query;
 
-    pageIndex = parseInt(pageIndex);
-    pageSize = parseInt(pageSize);
-    const offset = (pageIndex - 1) * pageSize; // ✅ FIXED HERE
-    const limit = pageSize;
+  pageIndex = parseInt(pageIndex);
+  pageSize = parseInt(pageSize);
 
-    const cacheKey = `blogs_page_${pageIndex}_size_${pageSize}_role_admin`;
-    const cachedData = await redisClient.get(cacheKey);
-    if (cachedData) {
-        return JSON.parse(cachedData);
-    }
+  const offset = (pageIndex - 1) * pageSize;
+  const limit = pageSize;
 
-    const whereClause = search ? {
-        blog_title: {
-            [Op.iLike]: `%${search}%`
-        }
-    } : {};
+  // ✅ Include search term (if any) in cache key, stay consistent with underscore format
+  const normalizedSearch = search ? search.toLowerCase().trim() : '';
+  const cacheKey = `blogs_page_${pageIndex}_size_${pageSize}${normalizedSearch ? `_search_${normalizedSearch}` : ''}_role_admin`;
 
-    const { count, rows } = await Blog.findAndCountAll({
-        where: whereClause,
-        offset,
-        limit,
-        order: [['created_at', 'DESC']],
-    });
+  // ✅ Check Redis cache first
+  const cachedData = await redisClient.get(cacheKey);
+  if (cachedData) {
+    return JSON.parse(cachedData);
+  }
 
-    const totalPages = Math.ceil(count / pageSize);
-
-    const result = {
-        totalItems: count,
-        totalPages,
-        currentPage: pageIndex,
-        blogs: rows,
+  // ✅ Build dynamic search filter
+  const whereClause = {};
+  if (search && search.trim() !== '') {
+    whereClause.blog_title = {
+      [Op.like]: `%${search.trim()}%`,
     };
+  }
 
-    await redisClient.setEx(cacheKey, 3600, JSON.stringify(result));
+  // ✅ Fetch from DB
+  const { count, rows } = await Blog.findAndCountAll({
+    where: whereClause,
+    offset,
+    limit,
+    order: [['created_at', 'DESC']],
+  });
 
-    return result;
+  const totalPages = Math.ceil(count / pageSize);
+
+  const result = {
+    totalItems: count,
+    totalPages,
+    currentPage: pageIndex,
+    blogs: rows,
+  };
+
+  // ✅ Cache result for 1 hour (3600 seconds)
+  await redisClient.setEx(cacheKey, 3600, JSON.stringify(result));
+
+  return result;
 };
 
 

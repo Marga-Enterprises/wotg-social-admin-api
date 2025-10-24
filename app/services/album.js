@@ -17,51 +17,65 @@ const {
     clearMusicCache
 } = require('@utils/clearRedisCache');
 
+// sequelize operators
+const { Op } = require('sequelize');
+
 // services functions
 
 // list of albums with pagination and optional search
 exports.listAlbumsService = async (query) => {
-    validateListAlbumsParams(query);
+  // ✅ Step 1: Validate and normalize params
+  validateListAlbumsParams(query);
 
-    let { pageIndex, pageSize, search } = query;
+  let { pageIndex = 1, pageSize = 10, search = '' } = query;
 
-    pageIndex = parseInt(pageIndex);
-    pageSize = parseInt(pageSize);
-    const offset = (pageIndex - 1) * pageSize;
-    const limit = pageSize;
+  pageIndex = Math.max(1, parseInt(pageIndex, 10) || 1);
+  pageSize = Math.min(Math.max(parseInt(pageSize, 10) || 10, 1), 100); // safe limit between 1–100
+  const offset = (pageIndex - 1) * pageSize;
 
-    const cacheKey = `albums:page:${pageIndex}:size:${pageSize}`;
-    const cachedData = await redisClient.get(cacheKey);
-    if (cachedData) {
-        return JSON.parse(cachedData);
-    }
+  // ✅ Step 2: Build a unique cache key
+  const cacheKey = `albums:page:${pageIndex}:size:${pageSize}${search ? `:search:${search.trim()}` : ''}`;
 
-    const whereClause = search ? {
-        title: {
-            [Op.iLike]: `%${search}%`
-        }
-    } : {};
+  const cachedData = await redisClient.get(cacheKey);
+  if (cachedData) {
+    return JSON.parse(cachedData);
+  }
 
-    const { count, rows } = await Album.findAndCountAll({
-        where: whereClause,
-        offset,
-        limit,
-        order: [['created_at', 'DESC']],
-    });
-
-    const totalPages = Math.ceil(count / pageSize);
-
-    const result = {
-        totalItems: count,
-        totalPages,
-        currentPage: pageIndex,
-        albums: rows,
+  // ✅ Step 3: Build dynamic filters (use Op.like for MariaDB/MySQL)
+  const whereClause = {};
+  if (search && search.trim()) {
+    whereClause.title = {
+      [Op.like]: `%${search.trim()}%`, // ✅ MySQL uses LIKE (not ILIKE)
     };
+  }
 
-    await redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+  // ✅ Step 4: Query database
+  const { count, rows } = await Album.findAndCountAll({
+    where: whereClause,
+    offset,
+    limit: pageSize,
+    order: [['created_at', 'DESC']],
+  });
 
-    return result;
+  // ✅ Step 5: Pagination logic
+  const totalPages = Math.max(1, Math.ceil(count / pageSize));
+
+  // ✅ Step 6: Construct result
+  const result = {
+    totalItems: count,
+    totalPages,
+    currentPage: pageIndex,
+    hasNextPage: pageIndex < totalPages,
+    hasPrevPage: pageIndex > 1,
+    albums: rows,
+  };
+
+  // ✅ Step 7: Cache result for 1 hour
+  await redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
+
+  return result;
 };
+
 
 
 // get album by id

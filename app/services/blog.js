@@ -131,11 +131,7 @@ exports.createBlogService = async (data, id) => {
 };
 
 
-
 // update an existing blog
-// -------------------------------------------------------------
-// 📰 Update an existing blog & notify subscribers (owner only)
-// -------------------------------------------------------------
 exports.updateBlogService = async (blogId, data, userRole) => {
   // 🧩 Validate blog ID and input fields
   validateBlogId(blogId);
@@ -149,9 +145,6 @@ exports.updateBlogService = async (blogId, data, userRole) => {
     throw error;
   }
 
-  // -------------------------------------------------------------
-  // 👑 If user is owner → approve + update + possibly notify
-  // -------------------------------------------------------------
   if (userRole === "owner") {
     await blog.update({
       blog_approved: true,
@@ -161,9 +154,6 @@ exports.updateBlogService = async (blogId, data, userRole) => {
     // ♻️ Clear cache for this blog
     await clearBlogCache(blogId);
 
-    // -------------------------------------------------------------
-    // 🔔 Send notification only if blog is released (by owner)
-    // -------------------------------------------------------------
     try {
       const now = new Date();
       const releaseDate = data.blog_release_date_and_time
@@ -197,9 +187,6 @@ exports.updateBlogService = async (blogId, data, userRole) => {
     return blog;
   }
 
-  // -------------------------------------------------------------
-  // 👤 For non-owner users → just update (no notification)
-  // -------------------------------------------------------------
   await blog.update(data);
   await clearBlogCache(blogId);
   console.log(`✏️ Blog ID ${blogId} updated by non-owner (no notification sent)`);

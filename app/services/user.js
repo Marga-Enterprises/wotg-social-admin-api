@@ -10,34 +10,36 @@ const {
     validateListUsersParams,
 } = require('@validators/user');
 
-
 // redis client
 const redisClient = require('@config/redis');
 
 // utility for clearing redis cache
-const { 
-    clearUsersCache,
-} = require('@utils/clearRedisCache');
+const { clearUsersCache } = require('@utils/clearRedisCache');
 
-
-// services functions
 
 // list of users with pagination
 exports.listUsersService = async (query) => {
   validateListUsersParams(query);
 
-  let { pageIndex, pageSize, search, guestFilter, dateFrom, dateTo } = query;
+  let { 
+    pageIndex, 
+    pageSize, 
+    search, 
+    guestFilter, 
+    dateFrom, 
+    dateTo,
+    dgroupFilter
+  } = query;
 
-  // 🧮 Pagination setup
   pageIndex = parseInt(pageIndex) || 1;
   pageSize = parseInt(pageSize) || 10;
+
   const offset = (pageIndex - 1) * pageSize;
   const limit = pageSize;
 
-  // 🧩 WHERE conditions builder
   const whereClause = {};
 
-  // 🔍 Search: by fname, lname, or email
+  // search filter
   if (search) {
     whereClause[Op.or] = [
       { user_fname: { [Op.like]: `%${search}%` } },
@@ -46,15 +48,22 @@ exports.listUsersService = async (query) => {
     ];
   }
 
-  // 👤 Guest filter
+  // guest filter
   if (guestFilter === 'guest') {
     whereClause.guest_account = true;
   } else if (guestFilter === 'nonguest' || guestFilter === 'non_guest') {
     whereClause.guest_account = false;
   }
-  // both → skip filter
 
-  // 🕐 Normalize date range
+  // D-Group filter
+  if (dgroupFilter === 'yes') {
+    whereClause.user_already_a_dgroup_member = true;
+  } else if (dgroupFilter === 'no') {
+    whereClause.user_already_a_dgroup_member = false;
+  }
+  // both → do not filter
+
+  // normalize date range
   const normalizeDate = (date, endOfDay = false) => {
     if (!date) return null;
     const d = new Date(date);
@@ -75,15 +84,16 @@ exports.listUsersService = async (query) => {
     whereClause.registered_at = { [Op.lte]: to };
   }
 
-  // 🧠 Cache key with normalized dates
+  // cache key
   const cacheKey = `users:page:${pageIndex}:size:${pageSize}:search:${search || ''}:guest:${
     guestFilter || 'both'
-  }:from:${from ? from.toISOString().split('T')[0] : ''}:to:${to ? to.toISOString().split('T')[0] : ''}`;
+  }:dgroup:${dgroupFilter || 'both'}:from:${
+    from ? from.toISOString().split('T')[0] : ''
+  }:to:${to ? to.toISOString().split('T')[0] : ''}`;
 
   const cached = await redisClient.get(cacheKey);
   if (cached) return JSON.parse(cached);
 
-  // 🧭 Fetch with pagination
   const { count, rows } = await User.findAndCountAll({
     where: whereClause,
     offset,
@@ -108,23 +118,43 @@ exports.listUsersService = async (query) => {
 
 // get user by id
 exports.getUserByIdService = async (userId) => {
-    validateUserId(userId);
+  validateUserId(userId);
 
-    const cacheKey = `user_${userId}`;
-    const cachedData = await redisClient.get(cacheKey);
-    if (cachedData) {
-        return JSON.parse(cachedData);
-    }
+  const cacheKey = `user_${userId}`;
+  const cachedData = await redisClient.get(cacheKey);
 
-    const user = await User.findByPk(userId);
-    if (!user) {
-        const error = new Error('User not found');
-        error.status = 404;
-        throw error;
-    }
+  if (cachedData) {
+    return JSON.parse(cachedData);
+  }
 
-    // Cache the result for future requests
-    await redisClient.setEx(cacheKey, 3600, JSON.stringify(user)); // Cache for 1 hour
+  const user = await User.findByPk(userId);
+  if (!user) {
+    const error = new Error('User not found');
+    error.status = 404;
+    throw error;
+  }
 
-    return user;
+  await redisClient.setEx(cacheKey, 3600, JSON.stringify(user));
+
+  return user;
+};
+
+
+// update user's D-Group membership status
+exports.updateUserDGroupStatusService = async (userId, isDGroupMember) => {
+  validateUserId(userId);
+
+  const user = await User.findByPk(userId);
+  if (!user) {
+    const error = new Error('User not found');
+    error.status = 404;
+    throw error;
+  }
+
+  user.user_already_a_dgroup_member = isDGroupMember;
+  
+  await user.save();
+  await clearUsersCache();
+
+  return user;
 };

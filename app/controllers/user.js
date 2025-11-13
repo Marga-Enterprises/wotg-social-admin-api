@@ -3,14 +3,14 @@ const {
     getToken, 
     sendSuccess,
     sendError,
-    decodeToken,
     sendUnauthorizedError,
 } = require('@utils/methods');
 
 // services
 const {
     listUsersService,
-    getUserByIdService
+    getUserByIdService,
+    updateUserDGroupStatusService,
 } = require('@services/user');
 
 
@@ -37,6 +37,22 @@ exports.getUserById = async (req, res) => {
         const { userId } = req.params;
         const result = await getUserByIdService(userId);
         return sendSuccess(res, result , 'User fetched successfully.');
+    } catch (error) {
+        return sendError(res, '', error.message, error.status);
+    }
+};
+
+
+// Update user's D-Group membership status function
+exports.updateUserDGroupStatus = async (req, res) => {
+    const token = getToken(req.headers);
+    if (!token) return sendUnauthorizedError(res, 'You must be logged in to access this resource.');
+
+    try {
+        const { userId } = req.params;
+        const { isDGroupMember } = req.body;
+        const result = await updateUserDGroupStatusService(userId, isDGroupMember);
+        return sendSuccess(res, result , 'User D-Group membership status updated successfully.');
     } catch (error) {
         return sendError(res, '', error.message, error.status);
     }

@@ -8,7 +8,7 @@ const userController = require('@controllers/user');
 // routes
 router.get('/', userController.listUsers);
 router.get('/:userId', userController.getUserById);
-router.put('/:userId', userController.updateUserDGroupStatus);
+router.put('/:userId', userController.updateUserDGroupStatusOrRole);
 
 // export the router
 module.exports = router;

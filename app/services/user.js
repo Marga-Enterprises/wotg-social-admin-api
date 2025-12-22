@@ -141,7 +141,7 @@ exports.getUserByIdService = async (userId) => {
 
 
 // update user's D-Group membership status
-exports.updateUserDGroupStatusService = async (userId, isDGroupMember) => {
+exports.updateUserDGroupStatusOrRoleService = async (userId, data) => {
   validateUserId(userId);
 
   const user = await User.findByPk(userId);
@@ -151,9 +151,11 @@ exports.updateUserDGroupStatusService = async (userId, isDGroupMember) => {
     throw error;
   }
 
-  user.user_already_a_dgroup_member = isDGroupMember;
+  user.user_already_a_dgroup_member = data.isDGroupMember ? data.isDGroupMember : user.user_already_a_dgroup_member;
+  user.user_role = data.user_role ? data.user_role : user.user_role;
   
   await user.save();
+
   await clearUsersCache();
 
   return user;
